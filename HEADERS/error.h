@@ -14,8 +14,12 @@
   #include <stdlib.h>
 
   //CONSTANTS
-  #define ERROR_NOT_ENOUGH_ARGUMENTS "Error! Falten arguments en la crida del programa. Ex: \"./Hidden <opcio> <nom_del_volum>\"\n"
-  #define ERROR_INVALID_OPTION "Error! La opció introduida no existeix.\n"
+  #define ERROR_NOT_ENOUGH_ARGUMENTS "\nError: Incorrect parameter number.\n"
+  #define ERROR_INVALID_OPTION "\nError! La opció introduida no existeix.\n"
+  #define ERROR_OPENING_SYSTEM_FILE "\nError. Filesystem not found.\n"
+  #define ERROR_FILE_FORMAT "\nError. The volume is neither FAT32 or EXT4.\n"
+  #define ERROR_FILE_NOT_RECOGNIZED "\nFile System not recognized\n"
+  #define ERROR_FILE_NOT_FOUND "\nError. File not found.\n"
 
   //Capçaleres
   void ERROR_print(char * error);

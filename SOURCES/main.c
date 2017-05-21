@@ -7,8 +7,10 @@
 *
 ******************************************************************** */
 //Llibreries pròpies
-#include "../HEADERS/types.h"
 #include "../HEADERS/error.h"
+#include "../HEADERS/fat.h"
+#include "../HEADERS/ext.h"
+#include "../HEADERS/output.h"
 
 //CONSTANTS
 #define INFO_OPTION "-info"
@@ -19,6 +21,10 @@
 #define ACTIVATE_HIDDEN_OPTION "-h"
 #define DESACTIVATE_HIDDEN_OPTION "-s"
 #define CHANGE_DATE_OPTION "-d"
+
+//VARIABLES
+InfoFAT32 infoF32;
+InfoEXT4 infoE4;
 
 Option MAIN_checkForOption (char * option) {
 
@@ -36,20 +42,117 @@ Option MAIN_checkForOption (char * option) {
     }
 }
 
+Fitxer MAIN_checkForFormat (char * fitxer) {
+
+  Fitxer format = NOFORMAT;
+  FILE * f;
+
+  f = fopen(fitxer, "rb");
+  if (f == NULL) {
+    ERROR_print(ERROR_OPENING_SYSTEM_FILE);
+    exit(-1);
+  } else{
+    if (EXT_magicNumber(f)){
+        format = EXT_format(f);
+    } else {
+      format = FAT_format(f);
+    }
+    fclose(f);
+  }
+  return format;
+}
+
+void MAIN_goForFormatInfo (char * fitxer) {
+
+  int format = MAIN_checkForFormat(fitxer);
+  switch (format) {
+
+    case FAT32:
+      infoF32 = FAT_getInfoFAT32(fitxer);
+      OUTPUT_FAT32 (infoF32);
+      break;
+
+    case EXT4:
+      infoE4 = EXT_getInfoEXT4(fitxer);
+      OUTPUT_EXT4 (infoE4);
+      break;
+
+    case FAT16:
+    case FAT12:
+    case EXT3:
+    case EXT2:
+      OUTPUT_otherFormats(SFDisp[format]);
+      break;
+
+    case NOFORMAT:
+      ERROR_print(ERROR_FILE_NOT_RECOGNIZED);
+      exit (-1);
+      break;
+
+  }
+}
+
+void MAIN_searchFile(char * fitxer, char * file, int fase) {
+
+  int format = MAIN_checkForFormat(fitxer);
+  switch (format) {
+
+    case FAT32:
+      FAT_findFileOnRoot(fitxer, file);
+
+      if (fase) {
+        FAT_showInfo(fitxer);
+      }
+      else {
+         OUTPUT_searchFAT32 (ACFAT32);
+      }
+
+      break;
+
+    case EXT4:
+      break;
+
+    case FAT16:
+    case FAT12:
+    case EXT3:
+    case EXT2:
+    case NOFORMAT:
+      ERROR_print(ERROR_FILE_FORMAT);
+      exit (-1);
+      break;
+
+  }
+
+}
+
+
 int main (int argc, char ** argv) {
 
-  if (argc < 2) ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
-  else {
+  if (argc < 3) {
+    ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
+    exit (-1);
+  } else {
 
     switch (MAIN_checkForOption(argv[1])) {
 
       case INFO:
+        MAIN_goForFormatInfo(argv[2]);
         break;
 
       case SEARCH:
+        if (argc < 4) {
+          ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
+          exit (-1);
+        }
+        MAIN_searchFile(argv[3], argv[2], 0);
         break;
 
       case SHOW:
+        if (argc < 4) {
+          ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
+          exit (-1);
+        }
+        MAIN_searchFile(argv[3], argv[2], 1);
         break;
 
       case ACTIVATE_READ:
