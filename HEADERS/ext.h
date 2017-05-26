@@ -51,7 +51,7 @@
 
   void manageFile(FILE * f, char * fileName, InfoEXT4 info, unsigned int inodeNumber);
 
-  void showFileContent(FILE * f, InfoEXT4 info, unsigned long dataBlockAdress);
+  void showFileContent(FILE * f, InfoEXT4 info, unsigned long dataBlockAdress, short blockExtent);
 
   unsigned int createDate();
 

@@ -219,7 +219,7 @@ void llegeixNodesFulla(FILE * f, char * fileName, InfoEXT4 info, unsigned short 
     actualAdress = ftell(f);
 
     if (!printing) readDataBlock(f, fileName, info, dataBlockAdress);
-    else showFileContent(f, info, dataBlockAdress);
+    else showFileContent(f, info, dataBlockAdress, blockExtent);
     fseek(f, actualAdress, SEEK_SET);
   }
 }
@@ -251,8 +251,10 @@ void readDataBlock(FILE * f, char * fileName, InfoEXT4 info, unsigned long dataB
 
      if (inode != 0 && entryType == 2 && strcmp(name, ".") && strcmp(name, "..")) recorreDirectori(f, fileName, info, inode);
      if (inode != 0 && entryType == 1 && !strcmp(name, fileName)) {
-       manageFile(f, fileName, info, inode);
-       flagTrobat = 1;
+       if (name[0] != '.') {
+         manageFile(f, fileName, info, inode);
+         flagTrobat = 1;
+       }
      }
 
      fseek(f, parentAdress, SEEK_SET);
@@ -306,7 +308,7 @@ void manageFile(FILE * f, char * fileName, InfoEXT4 info, unsigned int inodeNumb
 
   switch (option) {
     case 0:
-      OUTPUT_searchEXT4(fileName, fileSize, creationTime);
+      OUTPUT_searchEXT4(fileSize, creationTime);
       break;
 
     case 6:
@@ -345,18 +347,24 @@ void manageFile(FILE * f, char * fileName, InfoEXT4 info, unsigned int inodeNumb
   }
 }
 
-void showFileContent(FILE * f, InfoEXT4 info, unsigned long dataBlockAdress) {
+void showFileContent(FILE * f, InfoEXT4 info, unsigned long dataBlockAdress, short blockExtent) {
 
   unsigned int length = 0;
   char aux;
 
   fseek(f, info.blkSize * dataBlockAdress, SEEK_SET);
 
-  while(length < info.blkSize && length < inodeSize) {
-    fread(&aux, 1, 1, f);
-    printf("%c", aux);
-    length++;
-  }
+  do {
+
+    length = 0;
+    while(length < info.blkSize && length < inodeSize) {
+      fread(&aux, 1, 1, f);
+      printf("%c", aux);
+      length++;
+    }
+
+    blockExtent--;
+  } while (blockExtent > 0);
 }
 
 unsigned int createDate() {

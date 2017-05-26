@@ -22,7 +22,7 @@
   //Capçaleres
   void OUTPUT_searchFAT32 (ArchCercatFAT32 ACFAT32);
 
-  void OUTPUT_searchEXT4 (char * fileName, unsigned long size, unsigned int creationTime);
+  void OUTPUT_searchEXT4 (unsigned long size, unsigned int creationTime);
 
   void OUTPUT_FAT32 (InfoFAT32 info);
 

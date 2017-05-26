@@ -24,7 +24,7 @@ void OUTPUT_searchFAT32 (ArchCercatFAT32 ACFAT32) {
     printf("\nFile found! Size: %d Bytes.  Created on: %d/%d/%d\n", ACFAT32.mida, dia, mes, any);
 }
 
-void OUTPUT_searchEXT4 (char * fileName, unsigned long size, unsigned int creationTime) {
+void OUTPUT_searchEXT4 (unsigned long size, unsigned int creationTime) {
 
   time_t timeSeconds = creationTime;
   struct tm finalTime;
@@ -33,7 +33,7 @@ void OUTPUT_searchEXT4 (char * fileName, unsigned long size, unsigned int creati
   finalTime = *localtime(&timeSeconds);
   strftime(buffer, 80, "%d/%m/%Y", &finalTime);
 
-  printf("\nFile %s found! Size: %lu Bytes.  Created on: %s\n", fileName, size, buffer);
+  printf("\nFile found! Size: %lu Bytes.  Created on: %s\n", size, buffer);
 }
 
 void OUTPUT_FAT32 (InfoFAT32 info) {
