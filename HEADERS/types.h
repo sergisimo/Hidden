@@ -31,6 +31,9 @@
     int cluster;
     int mida;
     short data;
+    int soloLectura;
+    int oculto;
+    unsigned long direccioEntry;
   }ArchCercatFAT32;
 
   typedef struct EntryFAT32{
@@ -69,8 +72,8 @@
     int firstIno;
     int inoGrp;
     int freeIno;
-    int blkSize;
-    int rsvBlk;
+    unsigned int blkSize;
+    unsigned long rsvBlk;
     int freeBlk;
     int totBlk;
     int firstBlk;
@@ -80,6 +83,7 @@
     int lstCheck;
     int lstMount;
     int lstWritten;
+    int offset;
   }InfoEXT4;
 
   typedef enum {

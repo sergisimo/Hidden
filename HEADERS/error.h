@@ -20,6 +20,8 @@
   #define ERROR_FILE_FORMAT "\nError. The volume is neither FAT32 or EXT4.\n"
   #define ERROR_FILE_NOT_RECOGNIZED "\nFile System not recognized\n"
   #define ERROR_FILE_NOT_FOUND "\nError. File not found.\n"
+  #define ERROR_DATE "\nError. Data introduida incorrecte\n"
+  #define ERROR_ROOT_DIRECTORY "\nError. No hi ha Root Directory\n"
 
   //Capçaleres
   void ERROR_print(char * error);

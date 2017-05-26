@@ -98,7 +98,7 @@ void MAIN_searchFile(char * fitxer, char * file, int fase) {
   switch (format) {
 
     case FAT32:
-      FAT_findFileOnRoot(fitxer, file);
+      FAT_findFileOnRoot(fitxer, file, 0);
 
       if (fase) {
         FAT_showInfo(fitxer);
@@ -110,6 +110,8 @@ void MAIN_searchFile(char * fitxer, char * file, int fase) {
       break;
 
     case EXT4:
+      if (!fase) EXT_findFile(fitxer, file, 0, NULL);
+      else EXT_findFile(fitxer, file, 6, NULL);
       break;
 
     case FAT16:
@@ -125,6 +127,32 @@ void MAIN_searchFile(char * fitxer, char * file, int fase) {
 
 }
 
+void MAIN_propertiesFile(char * fitxer, char * file, int opcio, char * newDate) {
+
+  int format = MAIN_checkForFormat(fitxer);
+  switch (format) {
+
+    case FAT32:
+      FAT_findFileOnRoot(fitxer, file, 1);
+      FAT_manageProperties(ACFAT32, fitxer, opcio, newDate, file);
+      break;
+
+    case EXT4:
+      EXT_findFile(fitxer, file, opcio, newDate);
+      break;
+
+    case FAT16:
+    case FAT12:
+    case EXT3:
+    case EXT2:
+    case NOFORMAT:
+      ERROR_print(ERROR_FILE_FORMAT);
+      exit (-1);
+      break;
+
+  }
+
+}
 
 int main (int argc, char ** argv) {
 
@@ -156,18 +184,43 @@ int main (int argc, char ** argv) {
         break;
 
       case ACTIVATE_READ:
+        if (argc < 4) {
+          ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
+          exit (-1);
+        }
+        MAIN_propertiesFile(argv[3], argv[2], 1, "N");
         break;
 
       case DESACTIVATE_READ:
+        if (argc < 4) {
+          ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
+          exit (-1);
+        }
+        MAIN_propertiesFile(argv[3], argv[2], 2, "N");
         break;
 
       case ACTIVATE_HIDDEN:
+        if (argc < 4) {
+          ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
+          exit (-1);
+        }
+        MAIN_propertiesFile(argv[3], argv[2], 3, "N");
         break;
 
       case DESACTIVATE_HIDDEN:
+        if (argc < 4) {
+          ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
+          exit (-1);
+        }
+        MAIN_propertiesFile(argv[3], argv[2], 4, "N");
         break;
 
       case CHANGE_DATE:
+        if (argc < 5) {
+          ERROR_print(ERROR_NOT_ENOUGH_ARGUMENTS);
+          exit (-1);
+        }
+        MAIN_propertiesFile(argv[4], argv[3], 5, argv[2]);
         break;
     }
   }

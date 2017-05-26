@@ -87,11 +87,102 @@ void FAT_showInfo(char * fitxer) {
   }
 }
 
+void FAT_manageProperties(ArchCercatFAT32 ACFAT32, char * fitxer, int opcio,  char * newDate, char * file) {
+
+    FILE * f;
+    EntryFAT32 entry;
+    char mascara;
+    int posicio;
+
+    f = fopen(fitxer, "rb+");
+
+    if (f == NULL) {
+      ERROR_print(ERROR_OPENING_SYSTEM_FILE);
+      exit(-1);
+    } else {
+      fseek(f, ACFAT32.direccioEntry, SEEK_SET);
+      fread (&entry, 32, 1, f);
+
+      switch (opcio) {
+        case 1:
+          mascara = entry.Attrb & 0x01;
+          if (mascara != 1){
+            posicio = ACFAT32.direccioEntry + 11;
+            mascara = entry.Attrb + 1;
+            fseek (f, posicio, SEEK_SET);
+            fwrite (&mascara, 1, 1, f);
+          }
+          break;
+
+        case 2:
+          mascara = entry.Attrb & 0x01;
+          if (mascara != 0){
+            posicio = ACFAT32.direccioEntry + 11;
+            mascara = entry.Attrb -1;
+            fseek (f, posicio, SEEK_SET);
+            fwrite (&mascara, 1, 1, f);
+          }
+          break;
+
+        case 3:
+          mascara = entry.Attrb & 0x02;
+          if (mascara != 2){
+            posicio = ACFAT32.direccioEntry + 11;
+            mascara = entry.Attrb +2;
+            fseek (f, posicio, SEEK_SET);
+            fwrite (&mascara, 1, 1, f);
+          }
+          break;
+
+        case 4:
+          mascara = entry.Attrb & 0x02;
+          if (mascara != 0){
+            posicio = ACFAT32.direccioEntry + 11;
+            mascara = entry.Attrb -2;
+            fseek (f, posicio, SEEK_SET);
+            fwrite (&mascara, 1, 1, f);
+          }
+          break;
+
+        case 5:
+          if (strlen (newDate) != 8){
+            ERROR_print(ERROR_DATE);
+            exit(-1);
+          }
+
+          unsigned int data = atoi(newDate);
+          unsigned int dia = data / 1000000;
+          unsigned int mes = (data % 1000000) / 10000;
+          unsigned int any = data % 10000;
+
+          unsigned short d = ((any - 1980)*512 + mes*32 + dia);
+          posicio = ACFAT32.direccioEntry + 0x10;
+
+          fseek(f, posicio, SEEK_SET);
+          fwrite (&d, 2, 1, f);
+          break;
+
+      }
+
+      printf("\nThe properties of %s have been modified\n", file);
+
+      fclose(f);
+    }
+
+
+}
+
 void FAT_nomArchiuSenseVFATLN (EntryFAT32 entry, char paraula[150]) {
 
   int fi = strlen(entry.DName);
   int compt, index = 0;
   int flag = 1;
+  char prova[5];
+  prova [4] = '\0';
+  prova [3] = ' ';
+  prova [2] = ' ';
+  prova [1] = ' ';
+  prova [0] = ' ';
 
   do {
     if (entry.DName[compt] != ' ') {
@@ -99,7 +190,8 @@ void FAT_nomArchiuSenseVFATLN (EntryFAT32 entry, char paraula[150]) {
       index++;
     }
     else {
-      if (flag) {
+      int a = strcmp(entry.ext, prova);
+      if (a != 0 && flag == 1) {
         paraula[index] = '.';
         index++;
         flag = 0;
@@ -116,11 +208,12 @@ void FAT_nomArchiuSenseVFATLN (EntryFAT32 entry, char paraula[150]) {
 ArchiuFAT FAT_nomArchiuVFATLN (EntryFAT32 entry, ArchiuFAT AFAT, FILE * f) {
 
     char lletra;
-
     int extensio = entry.DName[0] - 64;
-    int fiVFAT = entry.DName[0];
     int i = 0;
+    char aux [150];
+    AFAT.longitud = 0;
 
+    strcpy (aux, AFAT.paraula);
     fseek(f, - 32, SEEK_CUR);
 
     for (i = 0; i < 32; i++) {
@@ -133,21 +226,32 @@ ArchiuFAT FAT_nomArchiuVFATLN (EntryFAT32 entry, ArchiuFAT AFAT, FILE * f) {
           }
         }
     }
+    AFAT.paraula[AFAT.longitud]='\0';
 
-    if (extensio == 1 || fiVFAT == 1) {
+    strcat (AFAT.paraula, aux);
+    if (extensio == 1) {
       AFAT.paraula[AFAT.longitud]='\0';
-      AFAT.VFATLongNameFlag = 1;
-      AFAT.longitud = 0;
     }
+    AFAT.VFATLongNameFlag = 1;
 
     return AFAT;
+}
+
+unsigned int createAdress (unsigned short AH, unsigned short AL){
+
+    unsigned int adre;
+
+    adre = AH << 16;
+    adre &= 0xFFFF0000;
+    adre |= AL;
+    return adre;
 }
 
 EstructuraFAT32 FAT_subdirectory (EntryFAT32 entry, InfoFAT32 info, EstructuraFAT32 EFAT32, FILE * f) {
 
   EstructuraFAT32 EFAT33;
 
-  EFAT33.nextCluster = entry.FCHI + entry.FCLW;
+  EFAT33.nextCluster = createAdress (entry.FCHI, entry.FCLW);
   EFAT33.fatTable = EFAT32.fatTable;
   EFAT33.dataRegion = EFAT32.dataRegion;
   EFAT33.dataRegionMesCluster = ((EFAT33.nextCluster - 2) * info.secXClou * info.secSize) + EFAT33.dataRegion + 64;
@@ -162,6 +266,8 @@ int FAT_CercaRootFile(FILE * f, InfoFAT32 info, EntryFAT32 entry, EstructuraFAT3
 
   unsigned char num = 0xE5;
   int t = 0;
+  char mascara;
+  char mascara2;
 
   //ens posicionem al Cluster que ens interesa.
   fseek(f, EFAT32.dataRegionMesCluster, SEEK_SET);
@@ -172,47 +278,71 @@ int FAT_CercaRootFile(FILE * f, InfoFAT32 info, EntryFAT32 entry, EstructuraFAT3
         printf("Entrada eliminada\n");
       }
       else {
-        if (entry.Attrb == 0x0f) { //VFAT LONG NAME
+        mascara = entry.Attrb & 0x0f;
+        if (mascara == 0x0f) { //VFAT LONG NAME
           AFAT = FAT_nomArchiuVFATLN (entry, AFAT, f);
         }
 
-        if (entry.Attrb == 0x10) { //SUBDIRECTORI
+        mascara = entry.Attrb & 0x10;
+        if (mascara == 0x10) { //SUBDIRECTORI
           EstructuraFAT32 EFAT33;
+          int fi = ((info.secSize * info.secXClou) / 32) - 3;
 
           EFAT33 = FAT_subdirectory(entry, info, EFAT32, f);
-          AFAT.trobat = FAT_CercaRootFile(f, info, entry, EFAT33, AFAT, 13);
+
+          AFAT.trobat = FAT_CercaRootFile(f, info, entry, EFAT33, AFAT, fi);
 
           fseek(f, EFAT32.dataRegionMesCluster + t * 32 + 32, SEEK_SET);
+          AFAT.paraula[0] = '\0';
         }
 
-        if (entry.Attrb == 0x20 && AFAT.VFATLongNameFlag == 0) { //ARCHIU sense VAFT
+        mascara = entry.Attrb & 0x20;
+        if (mascara == 0x20 && AFAT.VFATLongNameFlag == 0) { //ARCHIU sense VAFT
           char nomArchiu[150] = "";
 
           FAT_nomArchiuSenseVFATLN (entry, nomArchiu);
 
+          printf("%s\n", nomArchiu);
 
           if (!strcmp(nomArchiu,AFAT.file)) {
             strcpy(ACFAT32.NomArch,nomArchiu);
-            ACFAT32.cluster = entry.FCHI + entry.FCLW;
+            ACFAT32.cluster = createAdress (entry.FCHI, entry.FCLW);
             ACFAT32.direccio = ((ACFAT32.cluster - 2) * info.secXClou * info.secSize) + EFAT32.dataRegion;
-            ACFAT32.mida =entry.FSize;
+            ACFAT32.mida = entry.FSize;
             ACFAT32.data = entry.CDate;
-            //printf("\nFile found! Size: %d.  Created on: %d\n", entry.FSize, entry.CDate);
+            ACFAT32.direccioEntry = ftell(f) - 32;
             AFAT.trobat = 1;
+            ACFAT32.oculto = 0;
+
+            mascara2 = entry.Attrb & 0x02;
+            if (mascara2 == 0x02){
+              ACFAT32.oculto = 1;
+              printf("OCULTO\n");
+            }
           }
+
         }
 
-        if (entry.Attrb == 0x20 && AFAT.VFATLongNameFlag == 1) { //ARCHIU VFAT
-          if (!strcmp(AFAT.paraula,AFAT.file) && entry.Attrb == 0x20) {
+        if (mascara == 0x20 && AFAT.VFATLongNameFlag == 1) { //ARCHIU VFAT
+          printf("%s\n", AFAT.paraula);
+          if (!strcmp(AFAT.paraula,AFAT.file)) {
             strcpy(ACFAT32.NomArch,AFAT.paraula);
-            ACFAT32.cluster = entry.FCHI + entry.FCLW;
+            ACFAT32.cluster = createAdress (entry.FCHI, entry.FCLW);
             ACFAT32.direccio = ((ACFAT32.cluster - 2) * info.secXClou * info.secSize) + EFAT32.dataRegion;
-            ACFAT32.mida =entry.FSize;
+            ACFAT32.mida = entry.FSize;
             ACFAT32.data = entry.CDate;
-            //printf("\nFile found! Size: %d.  Created on: %d\n", entry.FSize, entry.CDate);
+            ACFAT32.direccioEntry = ftell(f) - 32;
             AFAT.trobat = 1;
-          }
+            ACFAT32.oculto = 0;
 
+            mascara2 = entry.Attrb & 0x02;
+            if (mascara2 == 0x02){
+              ACFAT32.oculto = 1;
+              printf("OCULTO\n");
+            }
+
+          }
+          AFAT.paraula[0] = '\0';
           AFAT.VFATLongNameFlag = 0;
         }
       }
@@ -243,7 +373,7 @@ ArchiuFAT FAT_inicialitzaValors(char * file) {
   return AFAT;
 }
 
-int FAT_findFileOnRoot(char * fitxer, char * file) {
+int FAT_findFileOnRoot(char * fitxer, char * file, int changeProperties) {
 
   FILE * f;
   InfoFAT32 info;
@@ -262,8 +392,9 @@ int FAT_findFileOnRoot(char * fitxer, char * file) {
   }
   else {
     EFAT32 = FAT_getEstructura (f, info);
+    int entrades = ((info.secSize * info.secXClou) / 32) - 1;
 
-    if (!FAT_CercaRootFile(f, info, entry, EFAT32, AFAT, 15)) {
+    if (!FAT_CercaRootFile(f, info, entry, EFAT32, AFAT, entrades) || (ACFAT32.oculto == 1 && changeProperties == 0)) {
       fclose(f);
       ERROR_print(ERROR_FILE_NOT_FOUND);
       exit(-1);
@@ -302,6 +433,7 @@ InfoFAT32 FAT_getInfoFAT32 (char * fitxer) {
     fread (&info.secXFat, 4, 1, f);
     fseek(f, 44, SEEK_SET);
     fread (&info.RFCluster, 4, 1, f);
+    fseek(f, 71, SEEK_SET);
     fread (&info.label, 11, 1, f);
 
     fclose(f);

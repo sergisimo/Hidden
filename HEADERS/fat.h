@@ -25,6 +25,8 @@
   //Capçaleres
   InfoFAT32 FAT_getInfoFAT32 (char * fitxer);
 
+  void FAT_manageProperties(ArchCercatFAT32 ACFAT32, char * fitxer, int opcio,  char * newDate, char * file);
+
   EstructuraFAT32 FAT_getEstructura (FILE * f, InfoFAT32 info);
 
   int FAT_CercaRootFile(FILE * f, InfoFAT32 info, EntryFAT32 entry, EstructuraFAT32 FAT32, ArchiuFAT AFAT, int finalEntry);
@@ -45,6 +47,6 @@
 
   Fitxer FAT_formatFat1216 (FILE * f);
 
-  int FAT_findFileOnRoot(char * fitxer, char * file);
+  int FAT_findFileOnRoot(char * fitxer, char * file, int changeProperties);
 
 #endif

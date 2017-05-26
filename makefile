@@ -21,7 +21,7 @@ output.o: $Soutput.c $Houtput.h $Htypes.h
 	gcc $Soutput.c -c $(FLAGS)
 
 Hidden: $(OBJ)
-	gcc $(OBJ) -o Hidden $(FLAGS)
+	gcc $(OBJ) -o hidden $(FLAGS)
 
 clean:
-	rm *.o Hidden
+	rm *.o hidden
